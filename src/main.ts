@@ -1,21 +1,5 @@
+import type { Price, TickerObject } from './types';
 import { Statistics } from './statistics';
-
-export interface TickerObject {
-  a: [string, string, string]; // Ask [<price>, <whole lot volume>, <lot volume>]
-  b: [string, string, string]; // Bid [<price>, <whole lot volume>, <lot volume>]
-  c: [string, string]; // Last trade closed [<price>, <lot volume>]
-  h: [string, string]; // High [<today>, <last 24 hours>]
-  l: [string, string]; // Low [<today>, <last 24 hours>]
-  o: string; // Today's opening price
-  p: [string, string]; // Volume weighted average price [<today>, <last 24 hours>]
-  t: [number, number]; // Number of trades [<today>, <last 24 hours>]
-  v: [string, string]; // Volume [<today>, <last 24 hours>]
-}
-
-export interface Price {
-  ticker: TickerObject;
-  date: Date;
-}
 
 const properties: (keyof TickerObject)[] = [
   'a',
@@ -81,9 +65,11 @@ const getLot = (
   }
 };
 
-// Initialize prices
+// Initialize globals
 const prices: Price[] =
   JSON.parse(localStorage.getItem('bitcoin_prices')) || [];
+let lastTradeVolume: Price[] =
+  JSON.parse(localStorage.getItem('last_trade_volume')) || 0;
 
 /**
  *
@@ -99,6 +85,12 @@ export const fetchTickerData = async (
   const data = await response.json();
   const ticker = data.result[pair];
 
+  if (ticker.t[0] === lastTradeVolume) {
+    // last volume hasn't changed, ignore this entry
+    return;
+  }
+  lastTradeVolume = ticker.t[0];
+
   // Add the price
   prices.push({
     ticker,
@@ -107,6 +99,7 @@ export const fetchTickerData = async (
 
   // Save the price array
   localStorage.setItem('bitcoin_prices', JSON.stringify(prices));
+  localStorage.setItem('last_trade_volume', JSON.stringify(lastTradeVolume));
 
   return ticker;
 };
@@ -114,33 +107,8 @@ export const fetchTickerData = async (
 /**
  *
  */
-const calculateMovingAverage = (data: number[], period: number): number[] => {
-  if (data.length < period) {
-    return [];
-  }
-
-  const movingAverages: number[] = [];
-  let sum = 0;
-
-  for (let i = 0; i < period; i++) {
-    sum += data[i];
-  }
-
-  movingAverages.push(sum / period);
-
-  for (let i = period; i < data.length; i++) {
-    sum -= data[i - period];
-    sum += data[i];
-    movingAverages.push(sum / period);
-  }
-
-  return movingAverages;
-};
-
-/**
- *
- */
 export const calculateStatistics = (
+  threshold: number,
   prices: Price[],
   minutes: number = 20,
   since: Date = new Date()
@@ -164,13 +132,19 @@ export const calculateStatistics = (
       sum += value;
     }
 
-    result.movingAverages[property] = calculateMovingAverage(
+    result.movingAverages[property] = result.getMovingAverage(
       numbers,
       numbers.length
     );
 
     result.sums[property] = sum;
     result.averages[property] = sum / priceRange.length;
+    result.smoothness[property] = result.getSmoothnessRating(numbers);
+    result.percentageHigher[property] = result.getPercentageHigher(numbers);
+    result.increaseTheshold[property] = result.getIncreaseThreshold(
+      numbers,
+      threshold
+    );
   }
 
   return result;
