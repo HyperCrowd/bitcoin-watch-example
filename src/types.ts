@@ -10,6 +10,18 @@ export interface TickerNumbers {
   v: number;
 }
 
+export interface FullTickerNumbers {
+  ask: number;
+  bid: number;
+  lastTradeClose: number;
+  high: number;
+  low: number;
+  opening: number;
+  volumeWeightedAveragePrice: number;
+  trades: number;
+  volume: number;
+}
+
 export interface TickerObject {
   a: [string, string, string]; // Ask [<price>, <whole lot volume>, <lot volume>]
   b: [string, string, string]; // Bid [<price>, <whole lot volume>, <lot volume>]

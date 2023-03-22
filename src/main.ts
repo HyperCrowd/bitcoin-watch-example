@@ -1,4 +1,4 @@
-import type { Price, TickerObject } from './types';
+import type { FullTickerNumbers, Price, TickerObject } from './types';
 import { Statistics } from './statistics';
 
 const properties: (keyof TickerObject)[] = [
@@ -12,6 +12,18 @@ const properties: (keyof TickerObject)[] = [
   't',
   'v',
 ];
+
+const propertyMap: Map<keyof TickerObject, keyof FullTickerNumbers> = new Map([
+  ['a', 'ask'],
+  ['b', 'bid'],
+  ['c', 'lastTradeClose'],
+  ['h', 'high'],
+  ['l', 'low'],
+  ['o', 'opening'],
+  ['p', 'volumeWeightedAveragePrice'],
+  ['t', 'trades'],
+  ['v', 'volume'],
+]);
 
 /**
  *
@@ -66,10 +78,12 @@ const getLot = (
 };
 
 // Initialize globals
-const Prices: Price[] =
-  JSON.parse(localStorage.getItem('bitcoin_prices')) || [];
-let lastTradeVolume: number =
-  JSON.parse(localStorage.getItem('last_trade_volume')) || 0;
+const Prices: Price[] = JSON.parse(
+  localStorage.getItem('bitcoin_prices') || '[]'
+);
+let lastTradeVolume: number = JSON.parse(
+  localStorage.getItem('last_trade_volume' || '0')
+);
 
 /**
  *
@@ -97,13 +111,14 @@ export const fetchTickerData = async (
   );
   const data = await response.json();
   const ticker = data.result[pair];
-  console.log('data', data);
-  console.log('ticker', ticker);
+
   if (ticker.t[0] === lastTradeVolume) {
     // last volume hasn't changed, ignore this entry
     return false;
   }
+
   lastTradeVolume = ticker.t[0];
+  console.log('last', ticker.t[0], lastTradeVolume);
 
   // Add the price
   Prices.push({
@@ -133,12 +148,13 @@ export const calculateStatistics = (
     (price) => price.date >= timeAgo && price.date <= since
   );
 
-  const result = new Statistics();
+  const result = new Statistics(priceRange.length, timeAgo, since);
 
   for (const property of properties) {
     // Generate numbers
     const numbers: number[] = [];
     let sum = 0;
+    const actualProperty = propertyMap.get(property);
 
     for (const price of priceRange) {
       const value = getToday(price.ticker, property);
@@ -146,19 +162,22 @@ export const calculateStatistics = (
       sum += value;
     }
 
-    result.movingAverages[property] = result.getMovingAverage(
+    result.movingAverages[actualProperty] = result.getMovingAverage(
       numbers,
       numbers.length
     );
 
-    result.sums[property] = sum;
-    result.averages[property] = sum / priceRange.length;
-    result.smoothness[property] = result.getSmoothnessRating(numbers);
-    result.percentageHigher[property] = result.getPercentageHigher(numbers);
-    result.increaseTheshold[property] = result.getIncreaseThreshold(
+    result.sums[actualProperty] = sum;
+    result.averages[actualProperty] = sum / priceRange.length;
+    result.smoothness[actualProperty] = result.getSmoothnessRating(numbers);
+    result.increaseTheshold[actualProperty] = result.getIncreaseThreshold(
       numbers,
       threshold
     );
+    /*
+    result.percentageHigher[actualProperty] = result.getPercentageHigher(numbers);
+    
+    */
   }
 
   return result;

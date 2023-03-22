@@ -1,34 +1,37 @@
-import type { TickerNumbers } from './types';
+import type { FullTickerNumbers, TickerNumbers } from './types';
 
 export class Statistics {
   movingAverages: {
-    a: number[];
-    b: number[];
-    c: number[];
-    h: number[];
-    l: number[];
-    o: number[];
-    p: number[];
-    t: number[];
-    v: number[];
+    ask: number[];
+    bid: number[];
+    lastTradeClose: number[];
+    high: number[];
+    low: number[];
+    opening: number[];
+    volumeWeightedAveragePrice: number[];
+    trades: number[];
+    volume: number[];
   };
-  averages: TickerNumbers;
-  sums: TickerNumbers;
-  smoothness: TickerNumbers;
-  percentageHigher: TickerNumbers;
-  increaseTheshold: TickerNumbers;
+  averages: FullTickerNumbers;
+  sums: FullTickerNumbers;
+  smoothness: FullTickerNumbers;
+  percentageHigher: FullTickerNumbers;
+  increaseTheshold: FullTickerNumbers;
+  entries: number;
+  startDate: Date;
+  endDate: Date;
 
-  constructor() {
+  constructor(entries: number, startDate: Date, endDate: Date) {
     this.movingAverages = {
-      a: [],
-      b: [],
-      c: [],
-      h: [],
-      l: [],
-      o: [],
-      p: [],
-      t: [],
-      v: [],
+      ask: [],
+      bid: [],
+      lastTradeClose: [],
+      high: [],
+      low: [],
+      opening: [],
+      volumeWeightedAveragePrice: [],
+      trades: [],
+      volume: [],
     };
 
     this.averages = this.getTickerNumbers();
@@ -36,19 +39,22 @@ export class Statistics {
     this.smoothness = this.getTickerNumbers();
     this.percentageHigher = this.getTickerNumbers();
     this.increaseTheshold = this.getTickerNumbers();
+    this.entries = entries;
+    this.startDate = startDate;
+    this.endDate = endDate;
   }
 
-  private getTickerNumbers(): TickerNumbers {
+  private getTickerNumbers(): FullTickerNumbers {
     return {
-      a: 0,
-      b: 0,
-      c: 0,
-      h: 0,
-      l: 0,
-      o: 0,
-      p: 0,
-      t: 0,
-      v: 0,
+      ask: 0,
+      bid: 0,
+      lastTradeClose: 0,
+      high: 0,
+      low: 0,
+      opening: 0,
+      volumeWeightedAveragePrice: 0,
+      trades: 0,
+      volume: 0,
     };
   }
 
@@ -56,7 +62,7 @@ export class Statistics {
    *
    */
   getMovingAverage(data: number[], period: number): number[] {
-    if (data.length < period) {
+    if (data.length < period && this.entries <= 1) {
       return [];
     }
 
@@ -81,21 +87,23 @@ export class Statistics {
   /**
    * For each pair of adjacent numbers, it calculates the absolute difference between them,
    * and then calculates a smoothness rating based on that difference. If the difference is
-   * zero (i.e. the two numbers are the same), the rating is set to 10 to indicate maximum
+   * zero (i.e. the two numbers are the same), the rating is set to 1 to indicate maximum
    * smoothness. Otherwise, the rating is set to 1 divided by the difference, which gives a
    * higher rating for smaller differences and a lower rating for larger differences.
    */
   getSmoothnessRating(numbers: number[]): number {
-    const smoothnessRatings: number[] = [];
+    if (this.entries <= 1) {
+      return -1;
+    }
+
     let total: number = 0;
 
     for (let i = 0; i < numbers.length - 1; i++) {
-      const diff = Math.abs(numbers[i] - numbers[i + 1]);
-      const rating = diff === 0 ? 10 : 1 / diff;
-      total += rating;
+      const percentChange = ((numbers[i + 1] - numbers[i]) / numbers[i]) * 100;
+      total += percentChange;
     }
 
-    return total / numbers.length / 10;
+    return total / numbers.length;
   }
 
   /**
@@ -104,6 +112,10 @@ export class Statistics {
    * the length of the array) and multiplying by 100 to convert to a percentage.
    */
   getPercentageHigher(numbers: number[]): number {
+    if (this.entries <= 1) {
+      return -1;
+    }
+
     let count = 0;
 
     for (let i = 1; i < numbers.length; i++) {
@@ -120,19 +132,20 @@ export class Statistics {
    * number by dividing the counter by the number of comparisons made (which is one less than
    * the length of the array) and multiplying by 100 to convert to a percentage.
    */
-  getIncreaseThreshold(numbers: number[], threshold: number): number {
-    let count = 0;
-    threshold += 1;
-
-    for (let i = 1; i < numbers.length; i++) {
-      if (
-        numbers[i] > numbers[i - 1] &&
-        numbers[i] / numbers[i - 1] < threshold
-      ) {
-        count++;
-      }
+  getIncreaseThreshold(numbers: number[], withinThreshold: number): number {
+    if (this.entries <= 1) {
+      return -1;
     }
 
-    return (count / (numbers.length - 1)) * 100;
+    let total: number = 0;
+
+    for (let i = 0; i < numbers.length - 1; i++) {
+      const percentChange = ((numbers[i + 1] - numbers[i]) / numbers[i]) * 100;
+
+      total +=
+        percentChange < withinThreshold ? percentChange / withinThreshold : 0;
+    }
+
+    return total / numbers.length;
   }
 }

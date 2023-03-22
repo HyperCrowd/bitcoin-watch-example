@@ -25,7 +25,7 @@ async function update() {
 }
 
 async function main() {
-  setTimeout(await update, 10000);
+  setInterval(await update, 10000);
   await update();
 }
 
