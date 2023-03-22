@@ -12,26 +12,25 @@ async function update() {
   const ticker = await fetchTickerData();
   const prices = getPrices();
 
-  console.log(stats);
-
   if (ticker === false) {
     return;
   }
 
   const stat = calculateStatistics(0.3);
   stats.push(stat);
+  console.log('stats', stats);
 
   const body = html`
   <div>
     <h1>Ask</h1>
-    <h2>Average</h2>
-    <div class="ask-average" />
+    <h2>High/Low Averages</h2>
+    <div class="ask-highlow-averages" />
 
-    <h2>Smoothness</h2>
-    <div class="ask-smoothness" />
+    <h2>Ask/Bid Averages</h2>
+    <div class="ask-askbid-averages" />
 
-    <h2>Thresholds</h2>
-    <div class="ask-thresholds" />
+    <h2>Last Trade/Volume Weight Averages</h2>
+    <div class="ask-tradevol-averages" />
     
     <h1>Bid</h1>
     <h2>Average</h2>
@@ -114,17 +113,33 @@ async function update() {
     <div class="volumeWeightedAveragePrice-thresholds" />
   </div>
 `;
-
   render(body, document.body);
 
-  getChart('.ask-average', [], [
-    stats.map((stat) => stat.averages.high),
-    stats.map((stat) => stat.averages.ask),
-    stats.map((stat) => stat.averages.low)
-  ]);
-  getChart('.ask-smoothness', [], [[]]);
-  getChart('.ask-thresholds', [], [[]]);
-  getChart('.bid-average', [], [[]]);
+  getChart(
+    '.ask-highlow-averages',
+    [],
+    [
+      stats.map((stat) => stat.averages.high),
+      stats.map((stat) => stat.averages.low),
+    ]
+  );
+  getChart(
+    '.ask-askbid-averages',
+    [],
+    [
+      stats.map((stat) => stat.averages.ask),
+      stats.map((stat) => stat.averages.bid),
+    ]
+  );
+  getChart(
+    '.ask-tradevol-averages',
+    [],
+    [
+      stats.map((stat) => stat.averages.lastTradeClose),
+      stats.map((stat) => stat.averages.volumeWeightedAveragePrice),
+    ]
+  );
+  getChart('.bid-average', [], []);
   getChart('.bid-smoothness', [], [[]]);
   getChart('.bid-thresholds', [], [[]]);
   getChart('.lastTradeClose-average', [], [[]]);

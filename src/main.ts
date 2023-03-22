@@ -105,7 +105,6 @@ export function getLastTradeVolume() {
 export const fetchTickerData = async (
   pair: string = 'XXBTZUSD'
 ): Promise<TickerObject | boolean> => {
-  console.log('call', `https://api.kraken.com/0/public/Ticker?pair=${pair}`);
   const response = await fetch(
     `https://api.kraken.com/0/public/Ticker?pair=${pair}`
   );
@@ -118,7 +117,6 @@ export const fetchTickerData = async (
   }
 
   lastTradeVolume = ticker.t[0];
-  console.log('last', ticker.t[0], lastTradeVolume);
 
   // Add the price
   Prices.push({
