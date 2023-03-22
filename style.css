@@ -7,3 +7,30 @@ body {
   background-color: #eadbc4;
   color: black;
 }
+
+.first {
+  color: #d70206;
+}
+
+.second {
+  color: #f05b4f;
+}
+
+.third {
+  color: #f4c63d;
+}
+
+.fourth {
+  color: #d17905;
+}
+
+.aChart {
+  display: block;
+  width: 50%;
+  float: left;
+}
+
+h1,
+h2 {
+  text-align: center;
+}

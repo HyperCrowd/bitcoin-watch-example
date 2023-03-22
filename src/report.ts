@@ -18,8 +18,11 @@ export function getChart(
   // As options we currently only set a static size of 300x200 px
   var options = {
     fullWidth: true,
-    //    width: '300px',
-    //  height: '200px',
+    chartPadding: {
+      right: 40,
+      left: 40,
+    },
+    height: '300px',
   };
 
   // In the global name space Chartist we call the Line function to initialize a line chart. As a first parameter we pass in a selector where we would like to get our chart created. Second parameter is the actual data object and as a third parameter we pass in our options
