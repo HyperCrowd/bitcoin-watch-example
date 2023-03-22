@@ -66,39 +66,53 @@ const getLot = (
 };
 
 // Initialize globals
-const prices: Price[] =
+const Prices: Price[] =
   JSON.parse(localStorage.getItem('bitcoin_prices')) || [];
-let lastTradeVolume: Price[] =
+let lastTradeVolume: number =
   JSON.parse(localStorage.getItem('last_trade_volume')) || 0;
 
 /**
  *
  */
+export function getPrices() {
+  return Prices;
+}
+
+/**
+ *
+ */
+export function getLastTradeVolume() {
+  return lastTradeVolume;
+}
+
+/**
+ *
+ */
 export const fetchTickerData = async (
-  pair: string = 'XBTCUSD'
-): Promise<{
-  [pair: string]: TickerObject;
-}> => {
+  pair: string = 'XXBTZUSD'
+): Promise<TickerObject | boolean> => {
+  console.log('call', `https://api.kraken.com/0/public/Ticker?pair=${pair}`);
   const response = await fetch(
     `https://api.kraken.com/0/public/Ticker?pair=${pair}`
   );
   const data = await response.json();
   const ticker = data.result[pair];
-
+  console.log('data', data);
+  console.log('ticker', ticker);
   if (ticker.t[0] === lastTradeVolume) {
     // last volume hasn't changed, ignore this entry
-    return;
+    return false;
   }
   lastTradeVolume = ticker.t[0];
 
   // Add the price
-  prices.push({
+  Prices.push({
     ticker,
     date: new Date(),
   });
 
   // Save the price array
-  localStorage.setItem('bitcoin_prices', JSON.stringify(prices));
+  localStorage.setItem('bitcoin_prices', JSON.stringify(Prices));
   localStorage.setItem('last_trade_volume', JSON.stringify(lastTradeVolume));
 
   return ticker;
@@ -109,7 +123,7 @@ export const fetchTickerData = async (
  */
 export const calculateStatistics = (
   threshold: number,
-  prices: Price[],
+  prices: Price[] = Prices,
   minutes: number = 20,
   since: Date = new Date()
 ): Statistics => {

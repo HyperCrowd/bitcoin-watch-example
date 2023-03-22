@@ -1,6 +1,32 @@
 // Import stylesheets
 import './style.css';
+import { render } from 'preact';
+import { html } from 'htm/preact';
+import { calculateStatistics, fetchTickerData, getPrices } from './src/main';
 
-// Write TypeScript code!
-const appDiv: HTMLElement = document.getElementById('app');
-appDiv.innerHTML = `<h1>TypeScript Starter</h1>`;
+async function update() {
+  const ticker = await fetchTickerData();
+  const prices = getPrices();
+  const stats = calculateStatistics(0.3);
+
+  console.log(stats);
+
+  if (ticker === false) {
+    return;
+  }
+
+  const body = html`
+  <div>
+
+  </div>
+`;
+
+  render(body, document.body);
+}
+
+async function main() {
+  setTimeout(await update, 10000);
+  await update();
+}
+
+main();
